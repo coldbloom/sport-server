@@ -11,7 +11,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export const sendPhoneEmail = async (phone: string) => {
+export const sendEmail = async (phone: string, name?: string) => {
   const formattedDate = new Date().toLocaleString('ru-RU', {
     year: 'numeric',
     month: '2-digit',

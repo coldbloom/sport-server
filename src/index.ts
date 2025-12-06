@@ -1,17 +1,25 @@
 import express from 'express';
 import cors from 'cors';
+// import rateLimit from 'express-rate-limit';
 import { config } from './config';
 import { telegramSendMessage } from "./telegram-send-message";
+// import { sendEmail } from './mailer';
 
-export interface PhoneRequest {
+export interface IRequest {
+  name: string;
   phone: string;
 }
 
 const app = express();
 
-const allowedOrigins = [
+function removeAllSpaces(str: string): string {
+  return str.replace(/\s/g, '');
+}
+
+const allowedOriginsURL = [
   'https://holodniypartner.ru',
-  'https://conditioners-plum.vercel.app'
+  'https://conditioners-plum.vercel.app',
+  process.env.CLIENT_URL
 ];
 
 // Разрешает все домены и методы
@@ -21,44 +29,39 @@ app.use(cors({
   credentials: true
 }));
 
-// Middleware
-// app.use(cors({
-//   origin: (origin, callback) => {
-//     if (!origin || allowedOrigins.includes(origin)) {
-//       callback(null, true);
-//     } else {
-//       console.log('Blocked by CORS:', origin);
-//       callback(new Error('Not allowed'));
-//     }
-//   },
-//   methods: ['POST', 'OPTIONS'],
-//   allowedHeaders: ['Content-Type'],
-//   credentials: true
-// }));
+// CORS
+app.use(cors({
+  origin: (origin, callback) => {
+    const allowedOrigins = allowedOriginsURL.filter(Boolean);
 
-// @FIXME временно комментирую этот вариант
-// app.use(cors({
-//   origin: (origin, callback) => {
-//     const allowed = [
-//       'https://holodniypartner.ru',
-//       'https://conditioners-plum.vercel.app'
-//     ];
-//
-//     if (!origin || allowed.includes(origin.replace(/\/$/, ''))) {
-//       callback(null, true);
-//     } else {
-//       callback(new Error('Not allowed by CORS'));
-//     }
-//   },
-//   methods: ['POST', 'OPTIONS'],
-//   credentials: true
-// }));
+    if (!origin && process.env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+
+    if (origin && allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed'));
+    }
+  },
+  methods: ['POST'],
+  credentials: true
+}));
+
+// Rate limiting
+// const feedbackLimiter = rateLimit({
+//   windowMs: 15 * 60 * 1000, // 15 минут
+//   max: 5, // 5 запросов с IP
+//   message: { error: 'Слишком много запросов' }
+// });
+
 app.use(express.json());
+// app.use('/feedback', feedbackLimiter);
 
 // Роут для обработки номера телефона
-app.post('/api/feedback', async (req: any, res: any) => {
+app.post('/feedback', async (req: any, res: any) => {
   try {
-    const { phone } = req.body as PhoneRequest;
+    const { phone, name } = req.body as IRequest;
     const origin = req.headers.origin;
 
     if (!phone) {
@@ -66,27 +69,22 @@ app.post('/api/feedback', async (req: any, res: any) => {
     }
 
     // Отправляем email
-    // await sendPhoneEmail(phone);
-
-    if (origin === process.env.FREEZE_MASTER) {
-      await telegramSendMessage(
-        phone,
-        process.env.FREEZE_MASTER_TELEGRAM_TOKEN as string,
-        process.env.FREEZE_MASTER_CHAT_ID as string
-      );
-
-      return res.status(200).json({
-        success: true,
-        message: 'Request processed successfully'
-      });
-    }
-
-    await telegramSendMessage(phone, process.env.TELEGRAM_TOKEN as string, process.env.TELEGRAM_GROUP_CHAT_ID as string);
+    // await sendEmail(phone);
+    await telegramSendMessage(
+      removeAllSpaces(phone),
+      process.env.TELEGRAM_TOKEN as string,
+      process.env.TELEGRAM_CHAT_ID as string,
+      name
+    );
 
     return res.status(200).json({
       success: true,
       message: 'Request processed successfully'
     });
+
+    // if (origin === process.env.FREEZE_MASTER) {
+    //
+    // }
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ error: 'Internal server error' });

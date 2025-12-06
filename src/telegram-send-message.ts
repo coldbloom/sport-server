@@ -15,10 +15,11 @@ interface TelegramResponse {
 export const telegramSendMessage = async (
   phone: string,
   telegramToken: string,
-  telegramChatId: string
+  telegramChatId: string,
+  name?: string,
 ) => {
   try {
-    const text = `📞 <b>Новый запрос</b>\nТелефон: <code>${phone}</code>\nДата: ${new Date().toLocaleString('ru-RU')}`;
+    const text = `📞 <b>Новый запрос</b>\nТелефон: <code>${phone}</code>\nИмя: ${name}\nДата: ${new Date().toLocaleString('ru-RU')}`;
     const response: TelegramResponse = await axios.post(
       `https://api.telegram.org/bot${telegramToken}/sendMessage`,
       {
