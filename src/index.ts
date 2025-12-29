@@ -1,9 +1,7 @@
 import express from 'express';
 import cors from 'cors';
-// import rateLimit from 'express-rate-limit';
 import { config } from './config';
 import { telegramSendMessage } from "./telegram-send-message";
-// import { sendEmail } from './mailer';
 
 export interface IRequest {
   name: string;
@@ -17,17 +15,9 @@ function removeAllSpaces(str: string): string {
 }
 
 const allowedOriginsURL = [
-  'https://holodniypartner.ru',
-  'https://conditioners-plum.vercel.app',
+  'https://kunkhmerboxing.ru',
   process.env.CLIENT_URL
 ];
-
-// Разрешает все домены и методы
-app.use(cors({
-  origin: true,  // Автоматически разрешает текущий origin
-  methods: ['POST'],
-  credentials: true
-}));
 
 // CORS
 app.use(cors({
@@ -48,21 +38,12 @@ app.use(cors({
   credentials: true
 }));
 
-// Rate limiting
-// const feedbackLimiter = rateLimit({
-//   windowMs: 15 * 60 * 1000, // 15 минут
-//   max: 5, // 5 запросов с IP
-//   message: { error: 'Слишком много запросов' }
-// });
-
 app.use(express.json());
-// app.use('/feedback', feedbackLimiter);
 
 // Роут для обработки номера телефона
 app.post('/feedback', async (req: any, res: any) => {
   try {
     const { phone, name } = req.body as IRequest;
-    const origin = req.headers.origin;
 
     if (!phone) {
       return res.status(400).json({ error: 'Phone number is required' });
@@ -81,10 +62,6 @@ app.post('/feedback', async (req: any, res: any) => {
       success: true,
       message: 'Request processed successfully'
     });
-
-    // if (origin === process.env.FREEZE_MASTER) {
-    //
-    // }
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ error: 'Internal server error' });
